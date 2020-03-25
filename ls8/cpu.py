@@ -24,8 +24,8 @@ class CPU:
 
         for line in (l.strip() for l in open(sys.argv[1]) if not l.startswith('#') and l.strip()):
             print(line[:8])
-            cmd = f'0b{line[:8]}'
-            self.ram[address] = cmd
+            cmd = line[:8]
+            self.ram[address] = int(cmd, 2)
             address += 1
 
     def alu(self, op, reg_a, reg_b):
@@ -62,9 +62,9 @@ class CPU:
         LDI = 0b10000010
         PRN = 0b01000111
         HLT = 0b00000001
+        MLT = 0b10100010
 
         while 1 == 1:
-            IR = self.reg[self.pc]
             command = self.ram[self.pc]
             if command == LDI:
                 operand_a = self.ram_read(self.pc + 1)
@@ -75,6 +75,11 @@ class CPU:
                 reg = self.ram[self.pc + 1]
                 print(self.reg[reg])
                 self.pc += 2
+            elif command == MLT:
+                operand_a = self.ram_read(self.pc + 1)
+                operand_b = self.ram_read(self.pc + 2)
+                self.reg[operand_a] = self.reg[operand_a] * self.reg[operand_b]
+                self.pc += 3
             elif command == HLT:
                 self.pc += 1
                 break

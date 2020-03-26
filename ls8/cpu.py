@@ -10,6 +10,7 @@ class CPU:
         self.pc = 0
         self.reg = [0] * 8
         self.ram = [0] * 256
+        self.SP = 7
 
     def ram_read(self, MAR):
         return self.ram[MAR]
@@ -23,7 +24,6 @@ class CPU:
         address = 0
 
         for line in (l.strip() for l in open(sys.argv[1]) if not l.startswith('#') and l.strip()):
-            print(line[:8])
             cmd = line[:8]
             self.ram[address] = int(cmd, 2)
             address += 1
@@ -63,13 +63,18 @@ class CPU:
         PRN = 0b01000111
         HLT = 0b00000001
         MLT = 0b10100010
+        PUSH = 0b01000101
+        POP = 0b01000110
+        CALL = 0b01010000
+        RET = 0b00010001
+        ADD = 0b10100000
 
         while 1 == 1:
             command = self.ram[self.pc]
             if command == LDI:
                 operand_a = self.ram_read(self.pc + 1)
                 operand_b = self.ram_read(self.pc + 2)
-                self.reg[operand_a] += operand_b
+                self.reg[operand_a] = operand_b
                 self.pc += 3
             elif command == PRN:
                 reg = self.ram[self.pc + 1]
@@ -78,7 +83,32 @@ class CPU:
             elif command == MLT:
                 operand_a = self.ram_read(self.pc + 1)
                 operand_b = self.ram_read(self.pc + 2)
-                self.reg[operand_a] = self.reg[operand_a] * self.reg[operand_b]
+                self.reg[operand_a] *= self.reg[operand_b]
+                self.pc += 3
+            elif command == PUSH:
+                reg = self.ram[self.pc + 1]
+                value = self.reg[reg]
+                self.SP -= 1
+                self.ram[self.SP] = value
+                self.pc += 2
+            elif command == POP:
+                reg = self.ram[self.pc + 1]
+                value = self.ram[self.SP]
+                self.reg[reg] = value
+                self.SP += 1
+                self.pc += 2
+            elif command == CALL:
+                value = self.pc + 2
+                reg = self.ram[self.pc + 1]
+                subroutine = self.reg[reg]
+                self.reg[self.SP] -= 1
+                self.ram[self.reg[self.SP]] = value
+                self.pc = subroutine
+            elif command == RET:
+                pc = self.reg[self.SP]
+                self.pc = self.ram[pc]
+            elif command == ADD:
+                self.alu('ADD', self.ram_read(self.pc + 1), self.ram_read(self.pc + 2))
                 self.pc += 3
             elif command == HLT:
                 self.pc += 1

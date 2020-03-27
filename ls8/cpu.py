@@ -11,7 +11,10 @@ class CPU:
         self.reg = [0] * 8
         self.ram = [0] * 256
         self.SP = 7
-        self.FL = 0b00000000
+        self.E = 0
+        self.L = 0
+        self.G = 0
+        self.FL = int(f'{0b00000}{self.L}{self.G}{self.E}', 2)
 
     def ram_read(self, MAR):
         return self.ram[MAR]
@@ -34,13 +37,6 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
-        elif op == "CMP":
-            if reg_a == reg_b:
-                self.FL = 0b00000001
-            if reg_a < reg_b:
-                self.FL = 0b00000100
-            if reg_a > reg_b:
-                self.FL = 0b00000010
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -81,7 +77,6 @@ class CPU:
         JNE = 0b01010110
 
         while 1 == 1:
-            self.trace()
             command = self.ram[self.pc]
             if command == LDI:
                 operand_a = self.ram_read(self.pc + 1)
@@ -125,7 +120,20 @@ class CPU:
             elif command == JMP:
                 self.pc = self.reg[self.ram_read(self.pc + 1)]
             elif command == CMP:
-                self.alu('CMP', self.ram_read(self.pc + 1), self.ram_read(self.pc + 2))
+                reg_a = self.reg[self.ram_read(self.pc + 1)]
+                reg_b = self.reg[self.ram_read(self.pc + 2)]
+                if reg_a == reg_b:
+                    self.E = 1
+                    self.L = 0
+                    self.G = 0
+                if reg_a < reg_b:
+                    self.E = 0
+                    self.L = 1
+                    self.G = 0
+                if reg_a > reg_b:
+                    self.E = 0
+                    self.L = 0
+                    self.G = 1
                 self.pc += 3
             elif command == JEQ:
                 if self.E == 1:

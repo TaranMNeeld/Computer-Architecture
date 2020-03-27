@@ -10,3 +10,13 @@
 01000111 # PRN R0
 00000000
 00000001 # HLT
+
+  def load(self):
+        """Load a program into memory."""
+
+        address = 0
+
+        for line in (l.strip() for l in open(sys.argv[1]) if not l.startswith('#') and l.strip()):
+            cmd = line[:8]
+            self.ram[address] = int(cmd, 2)
+            address += 1

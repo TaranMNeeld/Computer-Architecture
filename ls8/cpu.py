@@ -11,6 +11,7 @@ class CPU:
         self.reg = [0] * 8
         self.ram = [0] * 256
         self.SP = 7
+        self.FL = 0
 
     def ram_read(self, MAR):
         return self.ram[MAR]
@@ -33,7 +34,20 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
-        # elif op == "SUB": etc
+        elif op == "JMP":
+            self.reg[reg_a] = self.reg[reg_b]
+            self.pc = self.reg[reg_b]
+        elif op == "CMP":
+            if reg_a == reg_b:
+                self.FL = 1
+            else:
+                self.FL = 0
+        elif op == "JEQ":
+            if self.FL == 1:
+                self.reg[reg_a] = self.reg[reg_b]
+        elif op == "JNE":
+            if self.FL == 0:
+                self.reg[reg_a] = self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -68,6 +82,10 @@ class CPU:
         CALL = 0b01010000
         RET = 0b00010001
         ADD = 0b10100000
+        JMP = 0b01010100
+        CMP = 0b10100111
+        JEQ = 0b01010101
+        JNE = 0b01010110
 
         while 1 == 1:
             command = self.ram[self.pc]
@@ -113,6 +131,15 @@ class CPU:
             elif command == HLT:
                 self.pc += 1
                 break
+            elif command == JMP:
+                self.alu('JMP', self.ram_read(self.pc + 1), self.ram_read(self.pc + 2))
+            elif command == CMP:
+                self.alu('CMP', self.ram_read(self.pc + 1), self.ram_read(self.pc + 2))
+                self.pc += 2
+            elif command == JEQ:
+                self.alu('JEQ', self.ram_read(self.pc + 1), self.ram_read(self.pc + 2))
+            elif command == JNE:
+                self.alu('JNE', self.ram_read(self.pc + 1), self.ram_read(self.pc + 2))
             else:
                 print(f'Unknown instruction: {command}')
                 sys.exit(1)

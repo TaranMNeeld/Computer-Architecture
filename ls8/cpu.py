@@ -11,7 +11,7 @@ class CPU:
         self.reg = [0] * 8
         self.ram = [0] * 256
         self.SP = 7
-        self.FL = 0
+        self.FL = 0b00000000
 
     def ram_read(self, MAR):
         return self.ram[MAR]
@@ -34,20 +34,13 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
-        elif op == "JMP":
-            self.reg[reg_a] = self.reg[reg_b]
-            self.pc = self.reg[reg_b]
         elif op == "CMP":
             if reg_a == reg_b:
-                self.FL = 1
-            else:
-                self.FL = 0
-        elif op == "JEQ":
-            if self.FL == 1:
-                self.reg[reg_a] = self.reg[reg_b]
-        elif op == "JNE":
-            if self.FL == 0:
-                self.reg[reg_a] = self.reg[reg_b]
+                self.FL = 0b00000001
+            if reg_a < reg_b:
+                self.FL = 0b00000100
+            if reg_a > reg_b:
+                self.FL = 0b00000010
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -88,6 +81,7 @@ class CPU:
         JNE = 0b01010110
 
         while 1 == 1:
+            self.trace()
             command = self.ram[self.pc]
             if command == LDI:
                 operand_a = self.ram_read(self.pc + 1)
@@ -128,18 +122,24 @@ class CPU:
             elif command == ADD:
                 self.alu('ADD', self.ram_read(self.pc + 1), self.ram_read(self.pc + 2))
                 self.pc += 3
+            elif command == JMP:
+                self.pc = self.reg[self.ram_read(self.pc + 1)]
+            elif command == CMP:
+                self.alu('CMP', self.ram_read(self.pc + 1), self.ram_read(self.pc + 2))
+                self.pc += 3
+            elif command == JEQ:
+                if self.E == 1:
+                    self.pc = self.reg[self.ram_read(self.pc + 1)]
+                else:
+                    self.pc += 2
+            elif command == JNE:
+                if self.E == 0:
+                    self.pc = self.reg[self.ram_read(self.pc + 1)]
+                else:
+                    self.pc += 2
             elif command == HLT:
                 self.pc += 1
                 break
-            elif command == JMP:
-                self.alu('JMP', self.ram_read(self.pc + 1), self.ram_read(self.pc + 2))
-            elif command == CMP:
-                self.alu('CMP', self.ram_read(self.pc + 1), self.ram_read(self.pc + 2))
-                self.pc += 2
-            elif command == JEQ:
-                self.alu('JEQ', self.ram_read(self.pc + 1), self.ram_read(self.pc + 2))
-            elif command == JNE:
-                self.alu('JNE', self.ram_read(self.pc + 1), self.ram_read(self.pc + 2))
             else:
                 print(f'Unknown instruction: {command}')
                 sys.exit(1)
